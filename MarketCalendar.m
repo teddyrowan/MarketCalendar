@@ -1,6 +1,6 @@
 //
 //  MarketCalendar.m
-//  sybil-iOS
+//  MarketCalendar
 //
 //  Created by MySybil.com
 //  Copyright © 2021 dcg. All rights reserved.
@@ -17,7 +17,7 @@
     self = [super init];
     if (self){
         sessions = [[NSArray alloc] initWithArray:[MarketCalendar getSessionList]];
-        //int aa = [MarketCalendar tradingSessionsInRangeWithStartDate:@"2021-01-04" andEndDate:@"2021-01-07"];
+        //int aa = [MarketCalendar tradingSessionsInRangeWithStartDate:@"2020-01-04" andEndDate:@"2025-01-07"];
         //int aa = [MarketCalendar tradingSessionsInRangeWithStartDate:@"2021-01-04" andEndDate:@"2022-02-04"];
         //NSLog(@"%d", aa);
         
@@ -30,19 +30,40 @@
 + (int) tradingMinutesInRangeWithStartDate:(NSString *)startDate andEndDate:(NSString *)endDate{
     return [MarketCalendar tradingSessionsInRangeWithStartDate:startDate andEndDate:endDate]*390;
 }
-
-// TODO: check the boundaries to make sure the dates are in the range of the sessions. 
+ 
 + (int) tradingSessionsInRangeWithStartDate:(NSString*)startDate andEndDate:(NSString*)endDate{
-    NSArray *arr        = [MarketCalendar getSessionList];
+    NSArray *arr            = [MarketCalendar getSessionList];
+    bool only_approx_start  = NO; // startDate outside of valid trading sessions, can still approximate.
+    bool only_approx_end    = NO; // endDate outside of valid trading sessions, can still approximate.
+    
+    // Error checking.
+    if ([MarketCalendar dateVectorWithDate:startDate andComparison:arr[0]] < 0 || [MarketCalendar dateVectorWithDate:endDate andComparison:arr[0]] < 0){
+        NSAssert(NO, @"Trading session count cannot be calculated because input date is before tracked dates (2019-01-02)");
+    }
+    
+    if ([MarketCalendar dateVectorWithDate:startDate andComparison:arr[[arr count]-1]] > 0){
+        NSLog(@"WARNING: Trading session count can only be approximated because startDate is after tracked dates (2022-07-20");
+        only_approx_start = YES;
+    }
+    
+    if ([MarketCalendar dateVectorWithDate:endDate andComparison:arr[[arr count]-1]] > 0){
+        NSLog(@"WARNING: Trading session count can only be approximated because end date is after tracked dates (2022-07-20");
+        only_approx_end = YES;
+    }
+    
     
     // Find the index of the startDate.
     int start_approx    = (int)((float)[MarketCalendar calendarDaysSince2019:startDate] * [arr count]/DATES_INCLUDED);
-    start_approx        = [MarketCalendar findSortedIndexInArray:arr withGuess:start_approx andWithKey:startDate];
+    if (!only_approx_start){
+        start_approx        = [MarketCalendar findSortedIndexInArray:arr withGuess:start_approx andWithKey:startDate];
+    }
     
     // Find the index of the endDate.
     int end_approx      = (int)((float)[MarketCalendar calendarDaysSince2019:endDate] * [arr count]/DATES_INCLUDED);
-    end_approx          = [MarketCalendar findSortedIndexInArray:arr withGuess:end_approx andWithKey:endDate];
-    
+    if (!only_approx_end){
+        end_approx          = [MarketCalendar findSortedIndexInArray:arr withGuess:end_approx andWithKey:endDate];
+    }
+        
     // Return the difference between the two edges.
     return end_approx-start_approx;
 }
@@ -102,6 +123,9 @@
         NSLog(@"%@", str);
     }
 }
+
+
+#pragma mark - Hardcoded trading session dates. 
 
 + (NSArray *) getSessionList{
     NSArray *sessionList = [[NSArray alloc] initWithObjects:@"2019-01-02",

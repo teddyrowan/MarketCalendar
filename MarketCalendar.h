@@ -1,6 +1,6 @@
 //
 //  MarketCalendar.h
-//  sybil-iOS
+//  MarketCalendar
 //
 //  Created by MySybil.com
 //  Copyright © 2021 dcg. All rights reserved.
@@ -16,6 +16,7 @@
 @property (nonatomic, strong) NSArray *sessions;
 
 - (void) printSessions;
+// Log every valid trading session in the data. 
 
 + (int) tradingSessionsInRangeWithStartDate:(NSString*)startDate andEndDate:(NSString*)endDate;
 // (startDate, endDate]. Inclusive of end, exclusive of start. Start adjustment should be fractionally calculated.
