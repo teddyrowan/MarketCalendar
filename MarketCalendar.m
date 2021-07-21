@@ -5,10 +5,13 @@
 //  Created by MySybil.com
 //  Copyright © 2021 dcg. All rights reserved.
 //
+// TODO: Question. If the guess is after the date and we need to iterate backwards, does the iteration make the startDate inclusive in the math?
+                    // Off by one error?
 
-#define DATES_INCLUDED 1295  // calendar datediff between first and last day. (2022-07-20 subtract 2019-01-02)
 
 #import "MarketCalendar.h"
+
+#define DATES_INCLUDED 1295  // calendar datediff between first and last day. (2022-07-20 subtract 2019-01-02)
 
 @implementation MarketCalendar
 @synthesize sessions;
@@ -17,20 +20,17 @@
     self = [super init];
     if (self){
         sessions = [[NSArray alloc] initWithArray:[MarketCalendar getSessionList]];
-        //int aa = [MarketCalendar tradingSessionsInRangeWithStartDate:@"2020-01-04" andEndDate:@"2025-01-07"];
-        //int aa = [MarketCalendar tradingSessionsInRangeWithStartDate:@"2021-01-04" andEndDate:@"2022-02-04"];
-        //NSLog(@"%d", aa);
-        
     }
     return self;
 }
 
 
-// Ignores any half-days and similar.
+// This method assumes that all trading days are 390 minutes and returns tradingSessions adjusted for minutes.
 + (int) tradingMinutesInRangeWithStartDate:(NSString *)startDate andEndDate:(NSString *)endDate{
     return [MarketCalendar tradingSessionsInRangeWithStartDate:startDate andEndDate:endDate]*390;
 }
- 
+
+// Determine how many days of trading there are between the two dates. 
 + (int) tradingSessionsInRangeWithStartDate:(NSString*)startDate andEndDate:(NSString*)endDate{
     NSArray *arr            = [MarketCalendar getSessionList];
     bool only_approx_start  = NO; // startDate outside of valid trading sessions, can still approximate.
@@ -68,10 +68,14 @@
     return end_approx-start_approx;
 }
 
+// Iterated through the sorted array using directionality vector from the guess until you find the
+// dateString or pass over where it would have been.
 + (int) findSortedIndexInArray:(NSArray*)array withGuess:(int)approx andWithKey:(NSString*)dateString{
     int vector          = [MarketCalendar dateVectorWithDate:dateString andComparison:array[approx]];
     int new_vector;
     
+    // Iterate through the array from the guess until the directionality vector changes.
+    // Value is then either correct or missing but at that index.
     do {
         new_vector      = [MarketCalendar dateVectorWithDate:dateString andComparison:array[approx+vector]];
         approx          = approx + vector;
@@ -80,15 +84,19 @@
     return approx;
 }
 
+// Approximately how many calendar days have there been since the start of 2019.
 + (int) calendarDaysSince2019:(NSString*)dateStr{
+    if (dateStr.length != 10){
+        NSAssert(NO, @"The dateStr input to calendarDaysSince2019 is improperly formatted!: %@", dateStr);
+    }
+    
     int approx  = ([[dateStr substringToIndex:4] intValue]-2019)*365
                            + ([[dateStr substringWithRange:NSMakeRange(5, 2)] intValue]-1)*30
                            + [[dateStr substringFromIndex:8] intValue]-1;
-    
     return approx;
 }
 
-// Return 0 if same dates. 1 if date is bigger (later), -1 is reference is bigger. Tested.
+// Determine which way to iterate through the list of trading sessions.
 + (int) dateVectorWithDate:(NSString*)date andComparison:(NSString*)reference{
     if ([date isEqualToString:reference]){
         return 0;
@@ -115,9 +123,11 @@
         }
     }
     
-    return 0; // shits fucked.
+    NSAssert(NO, @"DateVector calculation failed.");
+    return 0;
 }
 
+// Log every valid trading session in the data to the console.
 - (void) printSessions{
     for (NSString *str in sessions){
         NSLog(@"%@", str);
