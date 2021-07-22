@@ -11,7 +11,7 @@
 @interface MarketCalendar : NSObject
 {
     NSArray *sessions;
-    // List of all trading sessions between Jan 1, 2019 and July 22, 2021
+    // List of all trading sessions between Jan 1, 2019 and Dec 31, 2025
 }
 @property (nonatomic, strong) NSArray *sessions;
 
